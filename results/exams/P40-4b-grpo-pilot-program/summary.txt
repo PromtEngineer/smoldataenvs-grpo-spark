@@ -1,0 +1,17 @@
+model=smol-4b-grpo-pilot  mode=program  records=394  ungraded=0
+slice                                  n  v1 pass@1           95% CI  v2 pass@1   v1-v2
+overall                              394     0.1269 (0.0976, 0.1634)     0.1193  0.0076
+tier=easy                             49     0.3061 (0.1952, 0.4453)     0.2857  0.0204
+tier=hard                            153     0.0719 (0.0406, 0.1241)     0.0719     0.0
+tier=medium                          192      0.125 (0.0855, 0.1793)     0.1146  0.0104
+dataset_seen_in_train=False           87     0.0805 (0.0395, 0.1569)     0.0805     0.0
+dataset_seen_in_train=True           307     0.1401 (0.1057, 0.1834)     0.1303  0.0098
+reward_mode=exact_bool                34     0.1471 (0.0645, 0.3013)     0.1471     0.0
+reward_mode=exact_short              143     0.1329 (0.0867, 0.1982)     0.1329     0.0
+reward_mode=flexible                   1        0.0    (0.0, 0.7935)        0.0     0.0
+reward_mode=list_csv                   1        0.0    (0.0, 0.7935)        0.0     0.0
+reward_mode=numeric                  215     0.1209 (0.0839, 0.1713)      0.107   0.014
+split=eval                           144     0.1319 (0.0861, 0.1969)      0.125  0.0069
+split=test                           250      0.124 (0.0887, 0.1706)      0.116   0.008
+diagnostics: {"command_filtered": 0, "timed_out": 0, "empty_prediction": 309, "truncated_completions": 3, "agent_no_answer_file": 0, "agent_hit_max_turns": 0, "agent_context_exhausted": 0, "v1_rungs": {"exact": 36, "numeric": 13, "numeric_scaled": 1}, "v1_pass_v2_fail": 3, "v2_pass_v1_fail": 0, "v1_only_by_v2_reason": {"numeric_miss": 3}, "v1_only_by_v1_rung": {"numeric": 2, "numeric_scaled": 1}}
+throughput:  {"completion_tokens": 48309, "prompt_tokens": 70275, "reasoning_tokens": 0, "gen_seconds_sum": 2633.1, "per_request_tok_per_s": 18.35, "wall_seconds": 209.71, "aggregate_tok_per_s": 230.36, "mean_completion_tokens": 122.6}

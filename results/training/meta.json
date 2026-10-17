@@ -1,0 +1,24 @@
+{
+ "model": "Qwen/Qwen3.5-4B",
+ "lora": {
+  "r": 64,
+  "alpha": 128,
+  "dropout": 0.0
+ },
+ "optimise": "strict",
+ "max_steps": 120,
+ "num_generations": 8,
+ "per_device_train_batch_size": 1,
+ "gradient_accumulation_steps": 16,
+ "learning_rate": 1e-05,
+ "temperature": 0.8,
+ "max_completion_length": 8192,
+ "eval_every": 50,
+ "save_steps": 20,
+ "task_pool_file": "data/grpo_pool_4b_agent.json",
+ "max_tool_calling_iterations": 10,
+ "mode": "agent",
+ "n_tasks": 240,
+ "init_from": null,
+ "started": "2026-09-26T20:13:58Z"
+}

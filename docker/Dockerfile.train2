@@ -1,0 +1,8 @@
+# smol-train:v2 = smol-train:local + flash-linear-attention, so HF's Qwen3.5 Gated DeltaNet layers run
+# fused Triton kernels (like vLLM) instead of the pure-PyTorch fallback, which disagreed with vLLM by
+# ~0.08 nats/token and was slow. torch/triton/transformers stay pinned to the base image's versions.
+FROM smol-train:local
+RUN python3 -m pip freeze | grep -iE "^(torch|triton|transformers|vllm|accelerate|numpy)==" > /tmp/pins2.txt \
+ && python3 -m pip install --no-cache-dir -c /tmp/pins2.txt "flash-linear-attention==0.5.2" \
+ && python3 -c "import fla, torch, triton, transformers; from fla.ops.gated_delta_rule import chunk_gated_delta_rule; print('fla', fla.__version__, 'torch', torch.__version__, 'triton', triton.__version__, 'transformers', transformers.__version__)"
+ENTRYPOINT []

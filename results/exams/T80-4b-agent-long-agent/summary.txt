@@ -1,0 +1,17 @@
+model=smol-4b-agent-long-80  mode=agent  records=394  ungraded=0
+slice                                  n  v1 pass@1           95% CI  v2 pass@1   v1-v2
+overall                              394      0.632 (0.5833, 0.6781)      0.566   0.066
+tier=easy                             49     0.9184 (0.8081, 0.9678)     0.8776  0.0408
+tier=hard                            153      0.451 (0.3743, 0.5301)     0.3529   0.098
+tier=medium                          192     0.7031  (0.635, 0.7633)     0.6562  0.0469
+dataset_seen_in_train=False           87     0.6322 (0.5273, 0.7259)     0.5977  0.0345
+dataset_seen_in_train=True           307     0.6319 (0.5767, 0.6839)      0.557  0.0749
+reward_mode=exact_bool                34     0.6765 (0.5084, 0.8087)     0.6765     0.0
+reward_mode=exact_short              143     0.6154 (0.5336, 0.6911)     0.6154     0.0
+reward_mode=flexible                   1        0.0    (0.0, 0.7935)        0.0     0.0
+reward_mode=list_csv                   1        0.0    (0.0, 0.7935)        0.0     0.0
+reward_mode=numeric                  215     0.6419 (0.5758, 0.7029)     0.5209  0.1209
+split=eval                           144     0.6319 (0.5507, 0.7063)     0.5417  0.0903
+split=test                           250      0.632 (0.5706, 0.6894)       0.58   0.052
+diagnostics: {"command_filtered": 0, "timed_out": 0, "empty_prediction": 75, "truncated_completions": 0, "agent_no_answer_file": 75, "agent_hit_max_turns": 91, "agent_context_exhausted": 0, "v1_rungs": {"exact": 181, "numeric": 62, "numeric_scaled": 6}, "v1_pass_v2_fail": 26, "v2_pass_v1_fail": 0, "v1_only_by_v2_reason": {"numeric_miss": 25, "too_long": 1}, "v1_only_by_v1_rung": {"numeric": 20, "numeric_scaled": 6}}
+throughput:  {"completion_tokens": 815477, "prompt_tokens": 13989382, "reasoning_tokens": 0, "gen_seconds_sum": 67647.36, "per_request_tok_per_s": 12.05, "wall_seconds": 4748.19, "aggregate_tok_per_s": 171.74, "mean_completion_tokens": 2069.7}

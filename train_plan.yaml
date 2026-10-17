@@ -1,0 +1,207 @@
+# SmolDataEnvs: SFT warm start -> GRPO on owned hardware. Plan of record (NOT RUN YET).
+#
+# Question: does GRPO on SmolDataEnvs make a 2B-4B Qwen a better data analyst than a
+# ~10x larger model, and does the gain transfer to datasets it never trained on?
+#
+# Source of every default: adithya-s-k/FineEnvs @ 08a5622, 04-smoldataenvs/scripts/
+# (train_grpo.py, train_sft.py, eval_pass1.py, rollout.py). Every deviation is listed
+# under `deviations:` with the reason. Values marked VERIFY depend on the TRL/vLLM
+# build that ends up working on GB10 (aarch64, sm_121).
+
+meta:
+  fineenvs_commit: 08a5622ff3164bb72cd57d6360c7edcce6247bf8
+  dataset_revision: b2bf35647e2381b1ab12c2ad7862cbbe4e8f857b     # FineEnvs/SmolDataEnvs
+  sft_dataset_revision: a9fa95ab5dff4f4522081f7eb003109e56b7a36d # FineEnvs/SmolDataEnvs-sft
+  students: [Qwen/Qwen3.5-2B, Qwen/Qwen3.5-4B]   # 2.27B / 4.66B params, Qwen3_5ForConditionalGeneration (VLM)
+  hardware:
+    spark: {gpu: GB10, memory_gb_unified: 119, bandwidth_gb_s: 273, cpu_cores: 20, os: "Ubuntu 24.04 aarch64"}
+    rtx4090: {gpu: RTX 4090, vram_gb: 24, bandwidth_gb_s: 1008}
+
+arms:   # each arm is evaluated with eval_harness.py, program mode, greedy, thinking off
+  A0_base:        "untrained student (the control)"
+  A1_grpo_only:   "GRPO from the base model (FineEnvs recipe, local sandbox)"
+  A2_sft_grpo:    "program-format SFT warm start -> GRPO (the headline arm)"
+  A3_repo_sft:    "optional: FineEnvs agent-format SFT (train_sft.py defaults) -> GRPO; shows the protocol-mismatch cost"
+  REF_fineenvs:   "AdithyaSK/smoldataenvs-grpo-2b-v0 through the same harness (its card has no numbers)"
+
+data:
+  train_pool: {split: train, tasks: 5000, tiers: [easy, medium, hard]}
+  heldout_monitor: {split: eval, tasks: 144, use: "in-training eval every eval_every steps"}
+  heldout_final:   {split: test, tasks: 250, use: "touched once per arm, at the end"}
+  transfer_slice:  {name: transfer_unseen_dataset, tasks: 87, note: "test+eval tasks whose Kaggle dataset never appears in train (65 test + 22 eval)"}
+  seen_slice_note: "74% of test and 85% of eval tasks reuse a Kaggle dataset that is in train; report seen vs unseen separately"
+  staging:  # scripts/stage_task_files.py: files listed per task; whole prefix only for the 424 tasks whose `files` is empty
+    eval_plus_test_gb: 8.72             # 4.02 with --max-mb 1000 (drops ONE eval task whose prefix is ~4.7 GB)
+    train_gb: 14.18
+    all_gb: 20.03                       # vs 37.05 GB if every prefix were pulled whole (pull_bucket.py behaviour)
+    empty_files_tasks: {train: 398, test: 11, eval: 15}
+
+reward:   # identical in train and eval: smolenv_local.program_rollout()
+  protocol: "one ```python block; LAST printed line is the answer (FineEnvs rollout.py)"
+  sandbox: "local subprocess: sandbox-exec (Mac) / bwrap (Spark); no network; 90 s per program"
+  optimised: {reward_correct: 1.0}     # vendored dataset grader (v1), byte-identical to FineEnvs/SmolDataEnvs grader.py
+  logged_weight_0:
+    reward_correct_strict: "checker_v2; the v1-v2 gap on train rollouts is the live reward-hacking alarm"
+    reward_ran: "program printed something (FineEnvs keeps this at weight 0; at 0.1 it was exploited)"
+    reward_command_filtered: "answer looked like a shell command"
+    reward_timed_out: "program hit the 90 s limit"
+  ungraded: "sandbox failure or missing data -> None (TRL drops it from the group), never 0.0"
+
+sft:
+  program_format:            # arm A2. Matches the GRPO/eval protocol.
+    data: data/sft_program/train_strict.jsonl   # 445 examples: SFT trajectory programs whose last printed line passes v1 AND v2
+    data_optional_rft: data/sft_program/rft_teacher.jsonl  # scripts/build_rft_sft.py from a teacher run (see baselines.yaml)
+    data_not_recommended: data/sft_program/train.jsonl     # 2,209 examples, but 1,764 of them print "Label: 42"-style last lines v1 forgives
+    lora: {r: 16, alpha: 32, dropout: 0.05, target_modules: all-linear, exclude_modules: "visual.*"}  # = FineEnvs
+    learning_rate: 1.0e-4    # deviation: FineEnvs 2e-5 is for 8k-token agent traces; short program targets + LoRA need more
+    epochs: 2                # deviation: 445-2.5k short examples; FineEnvs uses 1 epoch over 4,677 long ones
+    max_length: 2048         # deviation: program examples are ~300-1,200 tokens (FineEnvs 8192 for trajectories)
+    per_device_batch: 8
+    grad_accum: 2
+    eval_holdout: 0.05       # = FineEnvs
+    chat_template_kwargs: {enable_thinking: false}   # = FineEnvs: SFT, RL and eval render the same template
+  agent_format:              # arm A3, FineEnvs train_sft.py defaults unchanged
+    data: FineEnvs/SmolDataEnvs-sft     # 4,677 multi-turn bash trajectories, answer via /workdir/answer.txt
+    lora: {r: 16, alpha: 32, dropout: 0.05, target_modules: all-linear, exclude_modules: "visual.*"}
+    learning_rate: 2.0e-5
+    epochs: 1
+    max_length: 8192
+    per_device_batch: 1
+    grad_accum: 8
+  memory_fit:
+    spark: "2B and 4B LoRA SFT fit easily (<40 GB)"
+    rtx4090: "2B LoRA program-format: fits; 4B LoRA program-format at max_length 2048: fits with grad checkpointing; agent-format 8k on 4B: batch 1 only"
+
+grpo:
+  common:   # FineEnvs train_grpo.py values unless noted
+    num_tasks: 2000            # deviation (FineEnvs 256): 200 steps x 4 prompts sees each task at most once -> cleaner generalisation claim
+    difficulty: ""             # all tiers (FineEnvs default); DIFFICULTY=easy only to debug the loop
+    task_pool_file: data/grpo_pool_2b.json   # deviation: pre-screened pool, see pilot.prescreen; falls back to random tasks if absent
+    optimise: strict           # deviation (FineEnvs optimises v1): their published v0 reward-hacked v1 ("<value> label Yes"); v1 stays logged
+    max_input_mb: 100          # deviation: skip 129 train tasks with >100 MB inputs (pandas load time dominates rollouts)
+    num_generations: 8
+    max_completion_length: 1024
+    temperature: 0.8
+    top_p: 1.0
+    repetition_penalty: 1.0    # deviation (FineEnvs 1.05): vLLM applies it when sampling but the trainer's log-probs don't, which made training off-policy (0.06 vs 0.012 nats/token gap)
+    learning_rate: 3.0e-6      # full fine-tune value
+    max_steps: 200             # first full run; the dataset card's curves run to 1,119 steps
+    save_steps: 50
+    eval_every: 50             # in-loop greedy eval on the 144-task eval split, both checkers
+    eval_split: eval
+    exec_timeout_s: 90
+    sandbox_workers: 12
+    seed: 42
+    report_to: none            # deviation: steps go to <run_dir>/train_log.jsonl (JsonlLog callback); no tracker service
+    # left at TRL defaults exactly as FineEnvs does (VERIFY in the installed TRL): beta (KL), loss_type, epsilon
+  profiles:
+    spark_2b_full:
+      model: Qwen/Qwen3.5-2B
+      lora: null               # full fine-tune, as FineEnvs
+      per_device_train_batch_size: 4   # deviation: 4 x 8 = 32 completions = 4 prompts/step (FineEnvs 2 x 8 = 16 = 2 prompts)
+      gradient_accumulation_steps: 8
+      vllm_mode: colocate
+      vllm_gpu_memory_utilization: 0.25   # ~30 GB of 119 for weights + KV; FineEnvs 0.22 on an 80 GB A100
+      memory_estimate_gb: "37 (bf16 weights+grads, fp32 Adam) + ~10 activations + ~30 vLLM = ~77"
+    spark_4b_lora:
+      model: Qwen/Qwen3.5-4B
+      lora: {r: 64, alpha: 128, dropout: 0.0}
+      task_pool_file: data/grpo_pool_4b.json   # from runs/prescreen-4b (tasks the base 4B solves 1..7 of 8 times)
+      learning_rate: 1.0e-5    # deviation: LoRA needs a higher LR than full FT
+      per_device_train_batch_size: 4
+      gradient_accumulation_steps: 8
+      vllm_mode: colocate
+      vllm_gpu_memory_utilization: 0.30
+      memory_estimate_gb: "9.3 weights + ~1 LoRA/Adam + ~20 activations + ~36 vLLM = ~66"
+    agent_4b_lora:             # agent mode (train_grpo_agent.py): multi-turn bash tool, answer.txt, strict reward from the env
+      model: Qwen/Qwen3.5-4B
+      lora: {r: 64, alpha: 128, dropout: 0.0}
+      task_pool_file: data/grpo_pool_4b_agent.json   # optional agent-mode pre-screen; random train tasks if absent
+      learning_rate: 1.0e-5
+      per_device_train_batch_size: 2
+      gradient_accumulation_steps: 8     # 16 rollouts = 2 tasks x 8 generations per step
+      max_completion_length: 12288       # whole transcript incl. tool outputs (tool tokens are masked from the loss)
+      max_tool_calling_iterations: 10    # SFT p99 = 10 tool turns; the eval harness allows 12 model calls
+      vllm_gpu_memory_utilization: 0.30
+      vllm_max_model_length: 16384
+    spark_4b_full:             # only if the 4B LoRA pilot leaves >45 GB free
+      model: Qwen/Qwen3.5-4B
+      lora: null
+      per_device_train_batch_size: 2
+      gradient_accumulation_steps: 16
+      vllm_mode: colocate
+      vllm_gpu_memory_utilization: 0.15
+      memory_estimate_gb: "75 (weights+grads+Adam) + ~15 activations + ~18 vLLM = ~108 of 119: risky on GB10 (unified memory, page-cache freezes)"
+    rtx4090_2b_lora:
+      model: Qwen/Qwen3.5-2B
+      lora: {r: 32, alpha: 64, dropout: 0.0}
+      learning_rate: 1.0e-5
+      per_device_train_batch_size: 2   # = FineEnvs 2 x 8
+      gradient_accumulation_steps: 8
+      vllm_mode: colocate
+      vllm_gpu_memory_utilization: 0.30   # ~7 GB: 4.5 GB weights + KV for 16 x 1.2k tokens
+      sandbox_workers: 8
+      memory_estimate_gb: "4.5 weights + ~0.5 LoRA/Adam + ~6 activations + ~7 vLLM = ~18 of 24"
+      why_not_full_ft: "2.3B x 16 bytes (bf16 weights+grads, fp32 Adam) = 37 GB > 24 GB before vLLM"
+    rtx4090_4b_lora:           # the pilot decides whether this fits
+      model: Qwen/Qwen3.5-4B
+      lora: {r: 32, alpha: 64, dropout: 0.0}
+      learning_rate: 1.0e-5
+      per_device_train_batch_size: 1
+      gradient_accumulation_steps: 16
+      max_completion_length: 768       # deviation: frees KV/activation memory
+      vllm_mode: colocate
+      vllm_gpu_memory_utilization: 0.40
+      memory_estimate_gb: "9.3 weights + ~1 LoRA + ~4 activations + ~9.6 vLLM = ~24: borderline; fallback = train 4B on the Spark only"
+  agent_mode_stretch:          # multi-turn GRPO matching the SFT/Harbor protocol; only after the program-mode result exists
+    max_turns: 10              # SFT trajectories: p50 3, p90 5, p99 10 tool turns
+    max_tokens_per_turn: 1024
+    max_context_tokens: 16384  # the card's reference run used a 16k completion window and a 17-step loop
+    tool: bash (SFT schema), answer via /workdir/answer.txt, tool output capped at 8,000 chars (SFT max 8,016)
+    implementation: "TRL custom multi-turn rollout hook with vLLM server mode (VERIFY the API in the installed TRL)"
+
+pilot:   # 30-50 steps per profile, before any full run
+  steps: 40
+  overrides: {max_steps: 40, save_steps: 1000, eval_every: 40, num_tasks: 160}
+  prescreen:  # optional but cheap: base-model pass@8 on 1,000 train tasks via eval_harness (T=0.8, n=8)
+    command: "eval_harness.py run --split train --limit 1000 --n-samples 8 --temperature 0.8 ..."
+    keep: "tasks solved 1..7 of 8 times (all-0 and all-1 groups carry zero GRPO advantage)"
+    output: data/grpo_pool_2b.json
+  measure:
+    - perf/step_seconds (split into generation, reward/sandbox, backward from TRL timing logs)
+    - perf/tokens_per_s_end_to_end and vLLM generation tokens/s
+    - rollouts per second, sandbox wall seconds per batch, exec timeouts
+    - peak memory (nvidia-smi / tegrastats on GB10), page-cache MemFree floor on the Spark
+    - completions/mean_length, clipped (truncated) ratio
+    - reward_correct mean and fraction of groups with zero variance
+  go_no_go:
+    - "step time <= 60 s (2B) / <= 120 s (4B) -> 200 steps fit in one night"
+    - "zero-variance group fraction < 0.6, else widen tiers or use the prescreened pool"
+    - "no NaN rewards beyond sandbox failures; truncated ratio < 0.25"
+    - "MemFree on the Spark never below 3 GB (the GB10 page-cache freeze)"
+
+metrics:   # logged every step (train) and every eval_every steps (held-out)
+  train:
+    - reward_correct (v1 train reward, mean and std across the group)
+    - reward_correct_strict (v2 on the same rollouts) and their gap
+    - reward_ran, reward_command_filtered, reward_timed_out
+    - completions/mean_length, completions/clipped_ratio, entropy, kl (if beta > 0)
+    - perf/tokens_per_s_end_to_end, perf/step_seconds, sandbox seconds
+  heldout:  # eval split in-loop; test split once at the end with eval_harness.py
+    - heldout/pass@1_v1 and heldout/pass@1_v2, overall and by tier
+    - heldout/seen_True_* vs heldout/seen_False_* (transfer)
+    - v1_only_by_v2_reason (from summary.json): growth in not_a_bare_number / too_long / list_length = gaming
+  final_report_per_arm:
+    - test pass@1 (v1, v2) with Wilson 95% CI; paired McNemar vs A0 and vs the 10x baseline (compare_runs.py)
+    - transfer_unseen_dataset pass@1 (v1, v2)
+    - agent-mode eval of the final checkpoint (does single-program RL transfer to the multi-turn protocol?)
+
+deviations:
+  - {what: "local sandbox (sandbox-exec/bwrap) instead of Hugging Face Sandboxes", why: "owned hardware, no network, no 6-10 s sandbox start, answer key unreadable"}
+  - {what: "task data staged once (only listed files, 12 GB) instead of pull_bucket.py per task (whole prefixes, 37 GB)", why: "speed; offline"}
+  - {what: "program-format SFT (converted + strict-filtered) instead of agent-format SFT", why: "FineEnvs SFTs on multi-turn bash traces but runs GRPO/eval on single programs; warm start should match"}
+  - {what: "num_tasks 2000 and 4 prompts/step", why: "each task seen <= once in 200 steps; 2 prompts/step is a very noisy gradient"}
+  - {what: "pre-screened task pool and <=100 MB inputs", why: "zero-variance groups waste compute; big CSVs dominate rollout time"}
+  - {what: "LoRA for 4B (Spark) and for everything on the 4090", why: "memory; full FT of 2B alone needs ~37 GB"}
+  - {what: "v2 strict reward logged at weight 0", why: "detect grader gaming live"}
+  - {what: "eval with vLLM through an OpenAI-compatible server instead of HF generate", why: "same numbers for small and 27B models; FineEnvs eval_pass1.py uses transformers generate, greedy, 1024 tokens (kept: greedy, 1024, thinking off)"}

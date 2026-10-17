@@ -1,0 +1,30 @@
+Code review of what was downloaded, before anything from it was executed (2026-09-25)
+=====================================================================================
+Sources
+  FineEnvs repo: shallow clone of https://github.com/adithya-s-k/FineEnvs @ 08a5622ff3164bb72cd57d6360c7edcce6247bf8
+                 (Apache-2.0) -> ../repo_FineEnvs  (61 MB, mostly images/notebooks of other projects)
+  Grader:        FineEnvs/SmolDataEnvs grader.py @ dataset rev b2bf3564 (MIT), sha256
+                 bbcbf4e52964404159a4abd3f2eb8c19c449f7dfbc4f9aab62e4fd7ac22ac84a
+
+Nothing from repo_FineEnvs was executed. Everything run locally is either our own code or one of:
+
+  vendor/smoldataenvs_grader.py  byte-identical copy of the dataset's grader.py. Reviewed: pure local
+      computation. Imports os, re, sys, dataclasses and (lazily) math_verify. Reads env vars
+      (EXPECTED_ANSWER, QUESTION, REWARD_MODE, ATOL, RTOL, N_TOOL_CALLS, TOOL_BUDGET), stdin, and
+      /workdir/.n_tool_calls only in its CLI paths (unused by us). No network, no subprocess, no file
+      writes. `judge`/`judge_model` parameters are accepted and ignored (no LLM judge exists).
+  vendor/fineenvs_rollout.py     verbatim excerpt of 04-smoldataenvs/scripts/rollout.py: SYSTEM, PROMPT,
+      build_prompt, CODE_RE, extract_code, _COMMAND_SHAPED, looks_like_a_command, last_line, grade().
+      The only change: grader() loads the vendored file instead of hf_hub_download (no network).
+      NOT vendored: SandboxRunner (creates Hugging Face Sandboxes = remote paid compute, forwards
+      HF_TOKEN, pulls data over the network).
+
+Reviewed but not run (they launch remote compute or need a GPU):
+  scripts/train_grpo.py   downloads rollout.py from raw.githubusercontent.com if missing, then
+                          GRPOTrainer + vLLM colocate + HF Sandboxes. Needs GPU + HF token.
+  scripts/train_sft.py    SFTTrainer + LoRA on FineEnvs/SmolDataEnvs-sft. Needs GPU.
+  scripts/eval_pass1.py   transformers.generate greedy + HF Sandboxes. Needs GPU + HF token.
+  scripts/run_on_hf_jobs.sh  `hf jobs uv run --secrets HF_TOKEN ...` = paid HF Jobs. Never run.
+  harbor task pull_bucket.py (inside task dirs of the harbor datasets): downloads the whole bucket
+                          prefix with the HF token. Reimplemented as scripts/stage_task_files.py
+                          (listed files only, dry run by default).

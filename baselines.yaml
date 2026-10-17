@@ -1,0 +1,75 @@
+# Baselines for the SmolDataEnvs experiment. NOT RUN YET.
+# Every model goes through eval_harness.py with the same protocol:
+#   primary:   --mode program, greedy (temperature 0), max 1024 tokens, thinking OFF  (= FineEnvs eval_pass1.py)
+#   secondary: --mode agent (bash tool, answer.txt, max 12 turns), thinking OFF; big models also once with thinking ON
+# Splits: eval (144) + test (250) = 394 tasks; transfer slice = 87 unseen-dataset tasks inside those.
+# Time/cost estimates: reports/eval_cost_estimate.json (scripts/estimate_eval_cost.py) -- estimates until measured.
+# Spark serving notes come from the user's own deployments (vLLM image vllm/vllm-openai:muse-glimmer-arm64-cu130
+# already registers Qwen3_5ForConditionalGeneration; use --gpus all, not --runtime nvidia; the user runs model
+# downloads on the Spark themselves).
+
+vllm_common_flags: >-
+  --enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser qwen3
+  --max-model-len 32768 --enable-prefix-caching
+
+students:   # the models we train
+  - id: Qwen/Qwen3.5-2B
+    params_b: 2.27
+    weights_gb: 4.5
+    serve: {where: spark, engine: vllm, dtype: bfloat16, gpu_memory_utilization: 0.20}
+    est_minutes: {program: 10, agent: 16}
+  - id: Qwen/Qwen3.5-4B
+    params_b: 4.66
+    weights_gb: 9.3
+    serve: {where: spark, engine: vllm, dtype: bfloat16, gpu_memory_utilization: 0.25}
+    est_minutes: {program: 15, agent: 24}
+
+reference_trained:
+  - id: AdithyaSK/smoldataenvs-grpo-2b-v0
+    params_b: 2.21
+    weights_gb: 8.9          # saved in fp32; serve with --dtype bfloat16
+    note: "FineEnvs' own GRPO 2B; its card reports no before/after numbers, so we measure it"
+    serve: {where: spark, engine: vllm, dtype: bfloat16, gpu_memory_utilization: 0.20}
+    est_minutes: {program: 10, agent: 16}
+
+ten_x_comparators:   # ~10x the students
+  - id: Qwen/Qwen3.5-27B-FP8
+    params_b: 27.8           # 12x the 2B, 6x the 4B; same generation as the students (cleanest "size only" contrast)
+    weights_gb: 30.9
+    serve: {where: spark node 1, engine: vllm, quantization: fp8}
+    est_minutes: {program: 40, agent: 69}
+  - id: Qwen/Qwen3.8-27B  (or an NVFP4 build)
+    params_b: 27.8
+    weights_gb: 26.4
+    serve: {where: spark node 1, engine: "vllm or sglang", note: "read `reasoning`, not `reasoning_content`"}
+    est_minutes: {program: 40, agent: 69}
+  - id: Qwen/Qwen3.5-35B-A3B-FP8
+    params_b: 36.0           # 7.7x the 4B in total params, but ~3B active: "big but cheap" contrast
+    weights_gb: 37.5
+    serve: {where: spark, engine: vllm, quantization: fp8}
+    est_minutes: {program: 13, agent: 23}
+
+optional_scaling_points:
+  - {id: Qwen/Qwen3.5-9B, params_b: 9.65, weights_gb: 19.3, why: "middle point for a size curve"}
+  - {id: Qwen/Qwen3.5-122B-A10B-FP8, params_b: 122, weights_gb: 127.2, why: "does not fit one Spark (119 GB); two-node only, skip unless needed"}
+
+upper_references:
+  local:
+    id: Qwen3.8-Flash-Next NVFP4 (180B MoE)
+    serve: {where: spark node 2, url: "http://SPARK_HOST:8000/v1", model: qwen3.8-flash-next, note: "reasoning_effort low|medium|xhigh (no 'high'); MTP=3 + ple.py backport for batched requests"}
+    est_minutes: {program: 35, agent: 65}
+  frontier_api:
+    id: gemini-3.8-flash
+    endpoint: https://generativelanguage.googleapis.com/v1beta/openai/
+    key_env: GEMINI_API_KEY      # read from the environment; never sent to the sandbox (env is scrubbed)
+    tokens_per_394_task_pass: {program: {in_M: 0.075, out_M: 0.18}, agent: {in_M: 1.46, out_M: 0.26, requests: 1418}}
+    est_usd: "about $0.6-1.1 (program) and $1.5-2.3 (agent) per pass at an ASSUMED $0.50/M in, $3.00/M out; check the current price sheet; thinking tokens bill as output"
+
+llama_cpp_alternative: >-
+  For GGUF builds (e.g. a Q4_K_M 27B on the RTX 4090, or the students on the Mac): `llama-server -m <gguf> --jinja -c 32768
+  --port 8080` exposes /v1/chat/completions with tool calls; point --endpoint at http://host:8080/v1. Quantization changes
+  the model, so label those rows as such and never mix them into the bf16/FP8 comparison.
+
+totals:
+  local_gpu_hours_all_rows_one_sample: 7.4     # all models above, both modes, 394 tasks, 1 greedy sample
+  recommended_extra: "students and the 10x models: 4 samples at T=0.8 on the 87-task transfer slice for pass@k and variance (~+2 h)"

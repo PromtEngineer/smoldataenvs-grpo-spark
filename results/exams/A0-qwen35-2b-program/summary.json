@@ -1,0 +1,298 @@
+{
+ "model": "Qwen/Qwen3.5-2B",
+ "mode": "program",
+ "n_records": 394,
+ "n_ungraded": 0,
+ "ungraded_reasons": {},
+ "overall": {
+  "n_tasks": 394,
+  "pass@1_v1": 0.0609,
+  "pass@1_v2": 0.0584,
+  "ci95_v1": [
+   0.0413,
+   0.089
+  ],
+  "ci95_v2": [
+   0.0392,
+   0.0861
+  ],
+  "v1_minus_v2": 0.0025
+ },
+ "by_tier": {
+  "easy": {
+   "n_tasks": 49,
+   "pass@1_v1": 0.2245,
+   "pass@1_v2": 0.2041,
+   "ci95_v1": [
+    0.1302,
+    0.3588
+   ],
+   "ci95_v2": [
+    0.1148,
+    0.3364
+   ],
+   "v1_minus_v2": 0.0204
+  },
+  "hard": {
+   "n_tasks": 153,
+   "pass@1_v1": 0.0261,
+   "pass@1_v2": 0.0261,
+   "ci95_v1": [
+    0.0102,
+    0.0653
+   ],
+   "ci95_v2": [
+    0.0102,
+    0.0653
+   ],
+   "v1_minus_v2": 0.0
+  },
+  "medium": {
+   "n_tasks": 192,
+   "pass@1_v1": 0.0469,
+   "pass@1_v2": 0.0469,
+   "ci95_v1": [
+    0.0249,
+    0.0867
+   ],
+   "ci95_v2": [
+    0.0249,
+    0.0867
+   ],
+   "v1_minus_v2": 0.0
+  }
+ },
+ "by_level": {
+  "1": {
+   "n_tasks": 49,
+   "pass@1_v1": 0.2245,
+   "pass@1_v2": 0.2041,
+   "ci95_v1": [
+    0.1302,
+    0.3588
+   ],
+   "ci95_v2": [
+    0.1148,
+    0.3364
+   ],
+   "v1_minus_v2": 0.0204
+  },
+  "2": {
+   "n_tasks": 88,
+   "pass@1_v1": 0.0568,
+   "pass@1_v2": 0.0568,
+   "ci95_v1": [
+    0.0245,
+    0.1262
+   ],
+   "ci95_v2": [
+    0.0245,
+    0.1262
+   ],
+   "v1_minus_v2": 0.0
+  },
+  "3": {
+   "n_tasks": 104,
+   "pass@1_v1": 0.0385,
+   "pass@1_v2": 0.0385,
+   "ci95_v1": [
+    0.0151,
+    0.0947
+   ],
+   "ci95_v2": [
+    0.0151,
+    0.0947
+   ],
+   "v1_minus_v2": 0.0
+  },
+  "4": {
+   "n_tasks": 133,
+   "pass@1_v1": 0.0301,
+   "pass@1_v2": 0.0301,
+   "ci95_v1": [
+    0.0118,
+    0.0748
+   ],
+   "ci95_v2": [
+    0.0118,
+    0.0748
+   ],
+   "v1_minus_v2": 0.0
+  },
+  "5": {
+   "n_tasks": 20,
+   "pass@1_v1": 0.0,
+   "pass@1_v2": 0.0,
+   "ci95_v1": [
+    0.0,
+    0.1611
+   ],
+   "ci95_v2": [
+    0.0,
+    0.1611
+   ],
+   "v1_minus_v2": 0.0
+  }
+ },
+ "by_reward_mode": {
+  "exact_bool": {
+   "n_tasks": 34,
+   "pass@1_v1": 0.0588,
+   "pass@1_v2": 0.0588,
+   "ci95_v1": [
+    0.0163,
+    0.1909
+   ],
+   "ci95_v2": [
+    0.0163,
+    0.1909
+   ],
+   "v1_minus_v2": 0.0
+  },
+  "exact_short": {
+   "n_tasks": 143,
+   "pass@1_v1": 0.035,
+   "pass@1_v2": 0.035,
+   "ci95_v1": [
+    0.015,
+    0.0792
+   ],
+   "ci95_v2": [
+    0.015,
+    0.0792
+   ],
+   "v1_minus_v2": 0.0
+  },
+  "flexible": {
+   "n_tasks": 1,
+   "pass@1_v1": 0.0,
+   "pass@1_v2": 0.0,
+   "ci95_v1": [
+    0.0,
+    0.7935
+   ],
+   "ci95_v2": [
+    0.0,
+    0.7935
+   ],
+   "v1_minus_v2": 0.0
+  },
+  "list_csv": {
+   "n_tasks": 1,
+   "pass@1_v1": 0.0,
+   "pass@1_v2": 0.0,
+   "ci95_v1": [
+    0.0,
+    0.7935
+   ],
+   "ci95_v2": [
+    0.0,
+    0.7935
+   ],
+   "v1_minus_v2": 0.0
+  },
+  "numeric": {
+   "n_tasks": 215,
+   "pass@1_v1": 0.0791,
+   "pass@1_v2": 0.0744,
+   "ci95_v1": [
+    0.05,
+    0.123
+   ],
+   "ci95_v2": [
+    0.0463,
+    0.1175
+   ],
+   "v1_minus_v2": 0.0047
+  }
+ },
+ "by_dataset_seen_in_train": {
+  "False": {
+   "n_tasks": 87,
+   "pass@1_v1": 0.0575,
+   "pass@1_v2": 0.0575,
+   "ci95_v1": [
+    0.0248,
+    0.1276
+   ],
+   "ci95_v2": [
+    0.0248,
+    0.1276
+   ],
+   "v1_minus_v2": 0.0
+  },
+  "True": {
+   "n_tasks": 307,
+   "pass@1_v1": 0.0619,
+   "pass@1_v2": 0.0586,
+   "ci95_v1": [
+    0.04,
+    0.0946
+   ],
+   "ci95_v2": [
+    0.0374,
+    0.0908
+   ],
+   "v1_minus_v2": 0.0033
+  }
+ },
+ "by_split": {
+  "eval": {
+   "n_tasks": 144,
+   "pass@1_v1": 0.0625,
+   "pass@1_v2": 0.0625,
+   "ci95_v1": [
+    0.0332,
+    0.1145
+   ],
+   "ci95_v2": [
+    0.0332,
+    0.1145
+   ],
+   "v1_minus_v2": 0.0
+  },
+  "test": {
+   "n_tasks": 250,
+   "pass@1_v1": 0.06,
+   "pass@1_v2": 0.056,
+   "ci95_v1": [
+    0.0367,
+    0.0966
+   ],
+   "ci95_v2": [
+    0.0336,
+    0.0918
+   ],
+   "v1_minus_v2": 0.004
+  }
+ },
+ "diagnostics": {
+  "command_filtered": 0,
+  "timed_out": 1,
+  "empty_prediction": 340,
+  "truncated_completions": 14,
+  "agent_no_answer_file": 0,
+  "agent_hit_max_turns": 0,
+  "v1_rungs": {
+   "exact": 19,
+   "numeric": 5
+  },
+  "v1_pass_v2_fail": 1,
+  "v2_pass_v1_fail": 0,
+  "v1_only_by_v2_reason": {
+   "not_a_bare_number": 1
+  },
+  "v1_only_by_v1_rung": {
+   "numeric": 1
+  }
+ },
+ "throughput": {
+  "completion_tokens": 68047,
+  "prompt_tokens": 70275,
+  "gen_seconds_sum": 1480.14,
+  "per_request_tok_per_s": 45.97,
+  "wall_seconds": 199.32,
+  "aggregate_tok_per_s": 341.4,
+  "mean_completion_tokens": 172.7
+ }
+}

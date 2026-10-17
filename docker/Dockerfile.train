@@ -1,0 +1,9 @@
+# GRPO training image for the DGX Spark (GB10, aarch64, CUDA 13): the vLLM image that already
+# serves Qwen3.5 on this box, plus TRL. torch/transformers/vllm/accelerate are pinned to the
+# image's own versions so pip cannot swap them.
+FROM vllm/vllm-openai:v0.27.1-aarch64
+RUN python3 -m pip freeze | grep -iE "^(torch|transformers|vllm|accelerate|tokenizers|numpy|triton|xformers|flashinfer-python)==" > /tmp/pins.txt \
+ && python3 -m pip install --no-cache-dir -c /tmp/pins.txt \
+      "trl==1.14.0" peft "datasets>=4.7" pandas pyarrow "math-verify==0.9.0" pyyaml scipy scikit-learn \
+ && python3 -c "import trl, peft, vllm, torch, transformers; print('trl', trl.__version__, 'peft', peft.__version__, 'vllm', vllm.__version__, 'torch', torch.__version__, 'transformers', transformers.__version__)"
+ENTRYPOINT []

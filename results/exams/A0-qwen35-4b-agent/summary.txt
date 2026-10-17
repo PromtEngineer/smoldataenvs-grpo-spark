@@ -1,0 +1,17 @@
+model=Qwen/Qwen3.5-4B  mode=agent  records=394  ungraded=0
+slice                                  n  v1 pass@1           95% CI  v2 pass@1   v1-v2
+overall                              394     0.5609 (0.5116, 0.6091)     0.5178  0.0431
+tier=easy                             49     0.9184 (0.8081, 0.9678)     0.8571  0.0612
+tier=hard                            153     0.4183 (0.3431, 0.4975)      0.366  0.0523
+tier=medium                          192     0.5833 (0.5126, 0.6508)     0.5521  0.0312
+dataset_seen_in_train=False           87     0.5517 (0.4472, 0.6518)     0.5287   0.023
+dataset_seen_in_train=True           307     0.5635 (0.5076, 0.6179)     0.5147  0.0489
+reward_mode=exact_bool                34     0.7647    (0.6, 0.8756)     0.7647     0.0
+reward_mode=exact_short              143     0.4755 (0.3954, 0.5569)     0.4755     0.0
+reward_mode=flexible                   1        0.0    (0.0, 0.7935)        0.0     0.0
+reward_mode=list_csv                   1        0.0    (0.0, 0.7935)        0.0     0.0
+reward_mode=numeric                  215     0.5907 (0.5239, 0.6543)     0.5116  0.0791
+split=eval                           144     0.5417 (0.4603, 0.6209)     0.4514  0.0903
+split=test                           250      0.572   (0.51, 0.6318)      0.556   0.016
+diagnostics: {"command_filtered": 0, "timed_out": 0, "empty_prediction": 99, "truncated_completions": 0, "agent_no_answer_file": 99, "agent_hit_max_turns": 113, "agent_context_exhausted": 0, "v1_rungs": {"exact": 167, "numeric": 49, "numeric_scaled": 5}, "v1_pass_v2_fail": 17, "v2_pass_v1_fail": 0, "v1_only_by_v2_reason": {"numeric_miss": 16, "too_long": 1}, "v1_only_by_v1_rung": {"numeric": 12, "numeric_scaled": 5}}
+throughput:  {"completion_tokens": 606778, "prompt_tokens": 14400888, "reasoning_tokens": 0, "gen_seconds_sum": 42151.81, "per_request_tok_per_s": 14.4, "wall_seconds": 3281.6, "aggregate_tok_per_s": 184.9, "mean_completion_tokens": 1540.0}

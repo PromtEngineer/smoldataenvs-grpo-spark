@@ -1,0 +1,17 @@
+model=Qwen/Qwen3.5-4B  mode=program  records=394  ungraded=0
+slice                                  n  v1 pass@1           95% CI  v2 pass@1   v1-v2
+overall                              394     0.1117 (0.0842, 0.1466)     0.1066  0.0051
+tier=easy                             49     0.2449  (0.146, 0.3809)     0.2245  0.0204
+tier=hard                            153     0.0719 (0.0406, 0.1241)     0.0654  0.0065
+tier=medium                          192     0.1094 (0.0727, 0.1614)     0.1094     0.0
+dataset_seen_in_train=False           87     0.0575 (0.0248, 0.1276)     0.0575     0.0
+dataset_seen_in_train=True           307      0.127  (0.0943, 0.169)     0.1205  0.0065
+reward_mode=exact_bool                34     0.1765 (0.0835, 0.3351)     0.1765     0.0
+reward_mode=exact_short              143     0.1049 (0.0646, 0.1659)     0.1049     0.0
+reward_mode=flexible                   1        0.0    (0.0, 0.7935)        0.0     0.0
+reward_mode=list_csv                   1        0.0    (0.0, 0.7935)        0.0     0.0
+reward_mode=numeric                  215      0.107 (0.0723, 0.1554)     0.0977  0.0093
+split=eval                           144     0.1042 (0.0641, 0.1648)     0.0972  0.0069
+split=test                           250      0.116  (0.082, 0.1616)      0.112   0.004
+diagnostics: {"command_filtered": 0, "timed_out": 1, "empty_prediction": 281, "truncated_completions": 14, "agent_no_answer_file": 0, "agent_hit_max_turns": 0, "agent_context_exhausted": 0, "v1_rungs": {"exact": 35, "numeric": 9}, "v1_pass_v2_fail": 2, "v2_pass_v1_fail": 0, "v1_only_by_v2_reason": {"numeric_miss": 2}, "v1_only_by_v1_rung": {"numeric": 2}}
+throughput:  {"completion_tokens": 100293, "prompt_tokens": 70275, "reasoning_tokens": 0, "gen_seconds_sum": 4799.47, "per_request_tok_per_s": 20.9, "wall_seconds": 370.46, "aggregate_tok_per_s": 270.73, "mean_completion_tokens": 254.6}

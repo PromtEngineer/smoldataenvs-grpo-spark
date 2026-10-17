@@ -1,0 +1,9 @@
+smoldataenvs-grpo-spark
+Copyright 2026 PromtEngineer
+
+This product includes software from FineEnvs (https://github.com/adithya-s-k/FineEnvs),
+licensed under the Apache License, Version 2.0: vendor/fineenvs_rollout.py.
+See vendor/LICENSE-FineEnvs.txt.
+
+vendor/smoldataenvs_grader.py is an unmodified copy of the SmolDataEnvs grader
+(https://huggingface.co/datasets/FineEnvs/SmolDataEnvs), licensed under the MIT License.

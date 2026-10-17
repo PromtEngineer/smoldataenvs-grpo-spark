@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GRPO Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f4f1; --surface: #fcfcfb; --surface-2: #efefeb; --line: #dcdcd6; --grid: #e7e7e2;
+  --text: #0b0b0b; --text-2: #52514e; --muted: #85847e;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s7: #4a3aa7; --ref: #85847e;
+  --good: #006300; --warn: #8a5a00; --bad: #b3261e;
+  --good-bg: #e3f1e3; --warn-bg: #fbefd6; --bad-bg: #fbe3e1;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --surface-2: #232321; --line: #34332f; --grid: #2a2a27;
+    --text: #ffffff; --text-2: #c3c2b7; --muted: #8d8c84;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s7: #9085e9; --ref: #8d8c84;
+    --good: #7fd17f; --warn: #f0c060; --bad: #ff8a80;
+    --good-bg: #173017; --warn-bg: #33270d; --bad-bg: #3a1714;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --surface: #1a1a19; --surface-2: #232321; --line: #34332f; --grid: #2a2a27;
+  --text: #ffffff; --text-2: #c3c2b7; --muted: #8d8c84;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s7: #9085e9; --ref: #8d8c84;
+  --good: #7fd17f; --warn: #f0c060; --bad: #ff8a80;
+  --good-bg: #173017; --warn-bg: #33270d; --bad-bg: #3a1714;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 var(--sans); }
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 48px; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-block: 4px 16px; border-bottom: 1px solid var(--line); }
+h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+h1 span { color: var(--muted); font-weight: 400; }
+h2 { font-size: 13px; font-weight: 600; margin: 0 0 2px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); }
+.sub { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+select { font: 13px var(--mono); background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; max-width: 100%; }
+.pill { font: 500 12px var(--mono); padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+.pill.good { background: var(--good-bg); color: var(--good); } .pill.warn { background: var(--warn-bg); color: var(--warn); } .pill.bad { background: var(--bad-bg); color: var(--bad); }
+.spacer { flex: 1; }
+.meta { color: var(--muted); font: 12px var(--mono); }
+.progress { flex-basis: 100%; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.progress div { height: 100%; background: var(--s1); border-radius: 3px; transition: width .6s; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-block: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.tile .k { font-size: 12px; color: var(--text-2); }
+.tile .v { font: 500 26px/1.2 var(--mono); font-variant-numeric: tabular-nums; margin-top: 4px; }
+.tile .d { font: 12px var(--mono); color: var(--muted); margin-top: 2px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px 10px; min-width: 0; }
+.card.wide { grid-column: 1 / -1; }
+.chart { position: relative; height: 220px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+.legend i { display: inline-block; width: 14px; height: 2px; vertical-align: middle; margin-right: 6px; }
+.legend i.dash { background: repeating-linear-gradient(90deg, var(--ref) 0 4px, transparent 4px 7px) !important; }
+section { margin-top: 20px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tabs button { font: 12px var(--sans); color: var(--text-2); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; cursor: pointer; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.tabs button.on { background: var(--surface); color: var(--text); border-color: var(--s1); }
+.q { font-size: 13px; margin: 0 0 10px; color: var(--text); }
+.samples { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 10px; }
+.sample { border: 1px solid var(--line); border-radius: 6px; background: var(--bg); min-width: 0; }
+.sample .hd { display: flex; gap: 6px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--line); font: 11px var(--mono); color: var(--text-2); }
+.badge { font: 500 11px var(--mono); padding: 1px 6px; border-radius: 4px; }
+.badge.ok { background: var(--good-bg); color: var(--good); } .badge.no { background: var(--surface-2); color: var(--muted); } .badge.warn { background: var(--warn-bg); color: var(--warn); }
+pre { margin: 0; padding: 8px; font: 11.5px/1.45 var(--mono); white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; color: var(--text); }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: left; font-weight: 500; color: var(--text-2); font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+td.num { font-family: var(--mono); text-align: right; white-space: nowrap; }
+td.bar { width: 34%; min-width: 120px; }
+.barbox { height: 10px; background: var(--surface-2); border-radius: 2px; position: relative; }
+.barbox div { position: absolute; inset: 0 auto 0 0; background: var(--s1); border-radius: 2px; }
+tr.trained td:first-child { font-weight: 600; }
+tr.trained .barbox div { background: var(--s3); }
+tr.partial td { color: var(--muted); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 13px; }
+.kv dt { color: var(--text-2); } .kv dd { margin: 0; font-family: var(--mono); font-size: 12px; word-break: break-word; }
+.membar { display: flex; height: 12px; border-radius: 3px; overflow: hidden; background: var(--surface-2); margin: 6px 0 4px; }
+.membar div { height: 100%; }
+.log { font: 11.5px/1.5 var(--mono); color: var(--text-2); white-space: pre-wrap; word-break: break-word; margin: 6px 0 0; }
+.err { color: var(--bad); font: 12px var(--mono); }
+.note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>GRPO Lab <span>· SmolDataEnvs on Spark node 2</span></h1>
+    <select id="run" aria-label="Training run"></select>
+    <span id="status" class="pill">loading</span>
+    <span class="spacer"></span>
+    <span id="updated" class="meta"></span>
+    <div class="progress" title="training progress"><div id="prog" style="width:0%"></div></div>
+  </header>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">Step</div><div class="v" id="t-step">–</div><div class="d" id="t-step-d"></div></div>
+    <div class="tile"><div class="k">Training reward, strict (last 10 steps)</div><div class="v" id="t-rew">–</div><div class="d" id="t-rew-d"></div></div>
+    <div class="tile"><div class="k">Held-out eval, strict (144 tasks)</div><div class="v" id="t-held">–</div><div class="d" id="t-held-d"></div></div>
+    <div class="tile"><div class="k">Step time (last 10)</div><div class="v" id="t-time">–</div><div class="d" id="t-time-d"></div></div>
+    <div class="tile"><div class="k">Reward-hacking gap (lenient − strict)</div><div class="v" id="t-gap">–</div><div class="d" id="t-gap-d"></div></div>
+  </div>
+
+  <div class="grid" id="charts"></div>
+
+  <section class="card">
+    <h2>Latest completions</h2>
+    <p class="sub" id="samples-sub">The last logged training step: one question, the model's attempts, and how each was scored.</p>
+    <div class="tabs" id="tabs"></div>
+    <p class="q" id="question"></p>
+    <div class="samples" id="samples"></div>
+  </section>
+
+  <section class="two">
+    <div class="card">
+      <h2>Exam results (394 held-out tasks)</h2>
+      <p class="sub">Strict checker. Same harness, sandbox, and prompts for every row; program and agent modes are not comparable with each other.</p>
+      <div id="exams"></div>
+    </div>
+    <div class="card">
+      <h2>Node 2 health</h2>
+      <p class="sub">GB10 hangs instead of OOM-killing, so watch free memory. The training watchdog stops the run under 5 GB available.</p>
+      <div id="sys"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const pct = (x, d = 1) => (x == null || isNaN(x)) ? "–" : (100 * x).toFixed(d) + "%";
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ma = (ys, w = 5) => ys.map((_, i) => { const s = ys.slice(Math.max(0, i - w + 1), i + 1).filter((v) => v != null); return s.length ? s.reduce((a, b) => a + b, 0) / s.length : null; });
+// axis and tooltip numbers: 2 significant figures, no floating-point noise (0.09999999999999998 -> 0.1)
+const fmtNum = (v, sig = 2) => { if (v == null || isNaN(v)) return "–"; if (v === 0) return "0"; const a = Math.abs(v);
+  if (a >= 10000) return (v / 1000).toFixed(0) + "k"; if (a >= 1000) return (v / 1000).toFixed(1) + "k";
+  if (a >= 100) return Math.round(v).toString(); return String(Number(v.toPrecision(sig))); };
+const fmtPct = (v, sig = 2) => v == null || isNaN(v) ? "–" : String(Number((v * 100).toPrecision(sig >= 3 ? 3 : Math.abs(v) < 0.1 ? 1 : 2))) + "%";
+const mean = (a) => { const b = a.filter((v) => v != null && !isNaN(v)); return b.length ? b.reduce((x, y) => x + y, 0) / b.length : null; };
+
+let state = { run: null, runs: [], exams: null, charts: {}, tab: 0, lastDetail: null };
+try { state.run = localStorage.getItem("grpo-run"); } catch (e) {}
+
+// ── chart specs: one measure per chart, no dual axes ────────────────────────
+const SPECS = [
+  { id: "reward", title: "Reward on training tasks", sub: "Share of the step's attempts that were correct. Thin: per step. Thick: 5-step average.", wide: false, pctY: true,
+    series: (r, isAgent) => [
+      { label: "strict (optimised)", key: isAgent ? "rewards/SmolDataEnv/mean" : "rewards/reward_correct_strict/mean", color: "--s1", ma: true },
+      { label: "lenient (logged only)", key: isAgent ? "rewards/reward_lenient/mean" : "rewards/reward_correct/mean", color: "--s2", ma: true },
+    ] },
+  { id: "heldout", title: "Held-out eval (144 eval-split tasks)", sub: "Greedy, every eval_every steps. Dashed: the untrained 4B on the same tasks.", pctY: true, heldout: true },
+  { id: "signal", title: "Groups with no learning signal", sub: "Share of task groups where all 8 attempts scored the same (no gradient). Dashed: 0.6 go/no-go line.", pctY: true,
+    series: () => [{ label: "zero-variance groups", key: "frac_reward_zero_std", color: "--s4", ma: true }], ref: { y: 0.6, label: "0.6 limit" } },
+  { id: "length", title: "Completion length (tokens)", sub: "Mean and longest completion per step.",
+    series: () => [{ label: "mean", key: "completions/mean_length", color: "--s1" }, { label: "max", key: "completions/max_length", color: "--s3" }] },
+  { id: "loss", title: "Loss", sub: "GRPO loss per step. It hovers near zero by construction; the 5-step average trend matters, not the level.",
+    series: () => [{ label: "loss", key: "loss", color: "--s1", ma: true }], ref: { y: 0, label: "zero" } },
+  { id: "entropy", title: "Policy entropy", sub: "Falling fast can mean the model is collapsing onto one answer template.",
+    series: () => [{ label: "entropy", key: "entropy", color: "--s5", ma: true }] },
+  { id: "grad", title: "Gradient norm", sub: "Spikes flag unstable updates.",
+    series: () => [{ label: "grad norm", key: "grad_norm", color: "--s3", ma: true }] },
+  { id: "agree", title: "Trainer vs vLLM agreement", sub: "Mean per-token log-prob gap between the model being trained and the vLLM copy that generated the episodes. Healthy: under 0.02 (dashed). Above it, training is off-policy.",
+    series: () => [{ label: "log-prob gap (nats/token)", key: "sampling/sampling_logp_difference/mean", color: "--s5" }], ref: { y: 0.02, label: "0.02 healthy limit" } },
+  { id: "tools", title: "Bash calls per episode", sub: "Agent mode only: how many commands an episode runs before answering.",
+    series: () => [{ label: "bash calls", key: "tools/call_frequency", color: "--s3", ma: true }] },
+  { id: "time", title: "Step time (seconds)", sub: "Generation + sandbox + update. Dashed: 120 s go/no-go line for the 4B.",
+    series: () => [{ label: "seconds per step", key: "perf/step_seconds", color: "--s4" }], ref: { y: 120, label: "120 s" } },
+  { id: "sandbox", title: "Sandbox outcomes", sub: "Share of attempts per step.", pctY: true, wide: true,
+    series: (r, isAgent) => isAgent ? [
+      { label: "wrote an answer file", key: "rewards/reward_submitted/mean", color: "--s1" },
+    ] : [
+      { label: "program printed something", key: "rewards/reward_ran/mean", color: "--s1" },
+      { label: "hit the 90 s limit", key: "rewards/reward_timed_out/mean", color: "--s2" },
+      { label: "answer was a shell command", key: "rewards/reward_command_filtered/mean", color: "--s7" },
+      { label: "truncated at the token limit", key: "completions/clipped_ratio", color: "--s5" },
+    ] },
+];
+
+function buildCards() {
+  $("charts").innerHTML = SPECS.map((s) => `
+    <div class="card${s.wide ? " wide" : ""}">
+      <h2>${esc(s.title)}</h2><p class="sub">${esc(s.sub)}</p>
+      <div class="legend" id="lg-${s.id}"></div>
+      <div class="chart"><canvas id="c-${s.id}" role="img" aria-label="${esc(s.title)}"></canvas></div>
+    </div>`).join("");
+}
+
+function baseOpts(pctY, spec = {}, maxY = null) {
+  const grid = css("--grid"), text = css("--text-2");
+  return {
+    animation: false, responsive: true, maintainAspectRatio: false, parsing: false, normalized: true,
+    interaction: { mode: "index", intersect: false },
+    plugins: { legend: { display: false },
+      tooltip: { backgroundColor: css("--surface"), titleColor: css("--text"), bodyColor: css("--text"), borderColor: css("--line"), borderWidth: 1,
+        titleFont: { family: "IBM Plex Mono" }, bodyFont: { family: "IBM Plex Mono" }, padding: 8,
+        callbacks: { title: (it) => "step " + it[0].parsed.x,
+          label: (c) => ` ${c.dataset.label}: ${pctY ? fmtPct(c.parsed.y, 3) : fmtNum(c.parsed.y, 3)}` } } },
+    scales: {
+      x: { type: "linear", grid: { color: grid }, ticks: { color: text, font: { family: "IBM Plex Mono", size: 11 }, maxTicksLimit: 8 }, title: { display: true, text: "step", color: text, font: { size: 11 } } },
+      y: { grid: { color: grid }, ticks: { color: text, font: { family: "IBM Plex Mono", size: 11 }, maxTicksLimit: 6, callback: (v) => pctY ? fmtPct(v) : fmtNum(v) },
+        ...(spec.id === "loss" ? { grace: "10%" } : { beginAtZero: true, min: 0 }),
+        ...(pctY && maxY != null && maxY > 0.8 ? { max: 1 } : {}) },
+    },
+    elements: { point: { radius: 0, hitRadius: 8, hoverRadius: 4 }, line: { borderWidth: 2, tension: 0 } },
+  };
+}
+
+function setLegend(id, items) {
+  $("lg-" + id).innerHTML = items.map((it) => `<span><i class="${it.dash ? "dash" : ""}" style="background:${it.color}"></i>${esc(it.label)}</span>`).join("");
+}
+
+function draw(detail, baseEval) {
+  const rows = detail.rows, isAgent = detail.meta.mode === "agent";
+  const xs = rows.map((r) => r.step);
+  for (const s of SPECS) {
+    const ds = [], legend = [];
+    if (s.heldout) {
+      const h = detail.heldout;
+      ds.push({ label: "strict", data: h.map((p) => ({ x: p.step, y: p["pass@1_v2"] })), borderColor: css("--s1"), backgroundColor: css("--s1"), pointRadius: 4 });
+      ds.push({ label: "lenient", data: h.map((p) => ({ x: p.step, y: p["pass@1_v1"] })), borderColor: css("--s2"), backgroundColor: css("--s2"), pointRadius: 4 });
+      legend.push({ label: "strict", color: css("--s1") }, { label: "lenient", color: css("--s2") });
+      const b = baseEval && baseEval[isAgent ? "agent" : "program"];
+      const xmax = Math.max(detail.meta.max_steps || 0, ...xs, 1);
+      if (b) {
+        ds.push({ label: "untrained 4B, strict", data: [{ x: 0, y: b.strict }, { x: xmax, y: b.strict }], borderColor: css("--ref"), borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0 });
+        legend.push({ label: `untrained 4B, strict (${pct(b.strict)})`, color: css("--ref"), dash: true });
+      }
+      if (!h.length) legend.push({ label: "no eval yet (runs every eval_every steps)", color: "transparent" });
+    } else {
+      for (const ser of s.series(rows, isAgent)) {
+        const col = css(ser.color), ys = rows.map((r) => r[ser.key] ?? null);
+        if (ys.every((v) => v == null)) continue;
+        if (ser.ma) {
+          ds.push({ label: ser.label + " (per step)", data: xs.map((x, i) => ({ x, y: ys[i] })), borderColor: col + "55", borderWidth: 1 });
+          ds.push({ label: ser.label, data: xs.map((x, i) => ({ x, y: ma(ys)[i] })), borderColor: col, borderWidth: 2.5 });
+        } else {
+          ds.push({ label: ser.label, data: xs.map((x, i) => ({ x, y: ys[i] })), borderColor: col });
+        }
+        legend.push({ label: ser.label, color: col });
+      }
+      if (s.ref && xs.length) {
+        ds.push({ label: s.ref.label, data: [{ x: xs[0], y: s.ref.y }, { x: Math.max(...xs), y: s.ref.y }], borderColor: css("--ref"), borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0 });
+        legend.push({ label: s.ref.label, color: css("--ref"), dash: true });
+      }
+    }
+    setLegend(s.id, legend);
+    const maxY = Math.max(-Infinity, ...ds.flatMap((d) => d.data.map((p) => p.y).filter((v) => v != null)));
+    const opts = baseOpts(s.pctY, s, isFinite(maxY) ? maxY : null);
+    const ch = state.charts[s.id];
+    if (ch) { ch.data.datasets = ds; ch.options = opts; ch.update("none"); }
+    else if (window.Chart) state.charts[s.id] = new Chart($("c-" + s.id), { type: "line", data: { datasets: ds }, options: opts });
+  }
+}
+
+function tiles(detail, baseEval) {
+  const rows = detail.rows, n = rows.length, isAgent = detail.meta.mode === "agent";
+  const sk = isAgent ? "rewards/SmolDataEnv/mean" : "rewards/reward_correct_strict/mean";
+  const lk = isAgent ? "rewards/reward_lenient/mean" : "rewards/reward_correct/mean";
+  const last = rows.slice(-10), first = rows.slice(0, 10);
+  const step = n ? rows[n - 1].step : 0, max = detail.meta.max_steps;
+  $("t-step").textContent = max ? `${step} / ${max}` : step;
+  const secs = mean(last.map((r) => r["perf/step_seconds"]));
+  $("t-step-d").textContent = detail.finished ? "finished" : (max && secs ? `ETA ${fmtDur((max - step) * secs)}` : "");
+  $("prog").style.width = max ? Math.min(100, 100 * step / max) + "%" : "0%";
+  const rNow = mean(last.map((r) => r[sk])), rStart = mean(first.map((r) => r[sk]));
+  $("t-rew").textContent = pct(rNow);
+  $("t-rew-d").textContent = rStart != null && n > 10 ? `first 10 steps: ${pct(rStart)} (${rNow >= rStart ? "+" : ""}${((rNow - rStart) * 100).toFixed(1)} pts)` : "on the pre-screened task pool";
+  const h = detail.heldout[detail.heldout.length - 1], b = baseEval && baseEval[isAgent ? "agent" : "program"];
+  $("t-held").textContent = h ? pct(h["pass@1_v2"]) : "–";
+  $("t-held-d").textContent = h ? `step ${h.step}; untrained 4B ${b ? pct(b.strict) : "–"}` : (b ? `untrained 4B: ${pct(b.strict)}` : "");
+  $("t-time").textContent = secs ? secs.toFixed(0) + " s" : "–";
+  $("t-time-d").textContent = secs ? `${(3600 / secs).toFixed(0)} steps per hour` : "";
+  const gap = mean(last.map((r) => (r[lk] ?? 0) - (r[sk] ?? 0)));
+  $("t-gap").textContent = gap == null ? "–" : (gap * 100).toFixed(1) + " pts";
+  $("t-gap-d").innerHTML = gap == null ? "" : gap > 0.05 ? '<span class="badge warn">⚠ widening: check completions</span>' : '<span class="badge ok">✓ small</span>';
+}
+
+function fmtDur(s) { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60); return h ? `${h} h ${m} min` : `${m} min`; }
+
+function samples(detail) {
+  const sm = detail.samples || {};
+  if (!sm.groups || !sm.groups.length) { $("samples").innerHTML = `<p class="note">${sm.error ? esc(sm.error) : "No completions logged yet."}</p>`; $("tabs").innerHTML = ""; $("question").textContent = ""; return; }
+  $("samples-sub").textContent = `Step ${sm.step}: each question below was attempted 8 times; GRPO pushes toward attempts with positive advantage.`;
+  state.tab = Math.min(state.tab, sm.groups.length - 1);
+  $("tabs").innerHTML = sm.groups.map((g, i) => `<button class="${i === state.tab ? "on" : ""}" data-i="${i}" title="${esc(g.question)}">${esc(g.question)}</button>`).join("");
+  $("tabs").querySelectorAll("button").forEach((b) => b.onclick = () => { state.tab = +b.dataset.i; samples(detail); });
+  const g = sm.groups[state.tab];
+  $("question").textContent = g.question;
+  $("samples").innerHTML = g.samples.map((s, i) => `
+    <div class="sample"><div class="hd">#${i + 1}
+      <span class="badge ${s.strict ? "ok" : "no"}">${s.strict ? "✓ strict" : "✗ strict"}</span>
+      <span class="badge ${s.lenient ? (s.strict ? "ok" : "warn") : "no"}">${s.lenient ? "✓" : "✗"} lenient</span>
+      <span class="spacer"></span><span>adv ${s.advantage == null ? "–" : s.advantage.toFixed(2)}</span></div>
+      <pre>${esc(s.completion)}</pre></div>`).join("");
+}
+
+function exams(data) {
+  if (!data || !data.exams) return;
+  const byMode = { program: [], agent: [] };
+  data.exams.forEach((e) => (byMode[e.mode] || []).push(e));
+  $("exams").innerHTML = ["program", "agent"].map((m) => `
+    <h2 style="margin-top:12px">${m} mode</h2>
+    <div class="table-wrap"><table><thead><tr><th>Model</th><th>Strict</th><th></th><th>Lenient</th><th>Unseen datasets</th></tr></thead><tbody>
+    ${byMode[m].map((e) => `<tr class="${e.trained ? "trained" : ""}${e.partial ? " partial" : ""}"><td>${esc(e.label)}${e.partial ? ` <span class="badge warn" title="only ${e.n} of ${e.n + e.ungraded} tasks graded">⚠ partial: ${e.n} of ${e.n + e.ungraded} graded</span>` : ""}</td>
+      <td class="num">${e.partial ? "(" + pct(e.strict) + ")" : pct(e.strict)}</td><td class="bar"><div class="barbox"><div style="width:${e.partial ? 0 : Math.min(100, 100 * e.strict)}%"></div></div></td>
+      <td class="num">${pct(e.lenient)}</td><td class="num">${pct(e.unseen_strict)}</td></tr>`).join("") || `<tr><td colspan="5" class="note">none yet</td></tr>`}
+    </tbody></table></div>`).join("") + `<p class="note">Bold green rows are GRPO-trained checkpoints. "Unseen datasets" = the 87 tasks whose dataset never appears in training. Partial runs (a node went down mid-run) are shown in parentheses and not ranked.</p>`;
+}
+
+function sys(s) {
+  const m = s.mem, t = m.total || 121, used = t - m.available;
+  const warn = m.available < 12 ? "bad" : m.available < 25 ? "warn" : "good";
+  $("sys").innerHTML = `
+    <div class="membar" title="used / cache / free"><div style="width:${100 * used / t}%;background:var(--s1)"></div><div style="width:${100 * Math.max(0, m.cached) / t}%;background:var(--s3);opacity:.55"></div></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>in use ${used.toFixed(0)} GB</span><span><i style="background:var(--s3)"></i>page cache ${m.cached.toFixed(0)} GB</span>
+      <span class="pill ${warn}">${warn === "good" ? "✓" : "⚠"} available ${m.available.toFixed(0)} GB</span><span class="pill">free ${m.free.toFixed(1)} GB</span></div>
+    <dl class="kv">
+      <dt>GPU processes</dt><dd>${s.gpu.map((g) => `${g.pid}: ${(g.mib / 1024).toFixed(1)} GB`).join(", ") || "none"}</dd>
+      <dt>Containers</dt><dd>${s.containers.map((c) => esc(c.name) + " (" + esc(c.status) + ")").join(", ") || "none"}</dd>
+      <dt>Live sandboxes</dt><dd>${s.sandboxes}</dd>
+      <dt>tmux</dt><dd>${esc(s.tmux.join(", ") || "none")}</dd>
+      <dt>Load (1 min)</dt><dd>${s.load.toFixed(1)} on 20 cores</dd>
+      <dt>Node 1</dt><dd>${s.node1_up ? '<span class="pill good">✓ reachable</span>' : '<span class="pill bad">✗ down (needs a power cycle)</span>'}</dd>
+    </dl>
+    ${s.pipeline.length ? `<h2 style="margin-top:12px">Overnight pipeline</h2><p class="log">${esc(s.pipeline.join("\n"))}</p>` : ""}`;
+}
+
+async function j(url) { const r = await fetch(url, { cache: "no-store" }); if (!r.ok) throw new Error(url + " " + r.status); return r.json(); }
+
+async function refresh() {
+  try {
+    const [runs, sysd] = await Promise.all([j("/api/runs"), j("/api/system")]);
+    state.runs = runs;
+    if (!state.run || !runs.find((r) => r.name === state.run)) state.run = runs[0] && runs[0].name;
+    $("run").innerHTML = runs.map((r) => `<option value="${esc(r.name)}"${r.name === state.run ? " selected" : ""}>${esc(r.name)}${r.finished ? " (done)" : ""}</option>`).join("");
+    sys(sysd);
+    if (!state.exams || Date.now() - state.examsAt > 30000) { state.exams = await j("/api/exams"); state.examsAt = Date.now(); exams(state.exams); }
+    if (!state.run) { $("status").textContent = "no runs yet"; return; }
+    const d = await j("/api/run?name=" + encodeURIComponent(state.run));
+    const r = runs.find((x) => x.name === state.run), age = (Date.now() / 1000 - r.updated);
+    const training = sysd.containers.some((c) => c.name === "smol-train") && runs[0].name === state.run;
+    const st = d.finished ? ["finished", "good"] : training ? ["training", "good"] : age < 600 ? ["starting or evaluating", "warn"] : ["stopped", "bad"];
+    $("status").textContent = (st[1] === "good" && !d.finished ? "● " : "") + st[0]; $("status").className = "pill " + st[1];
+    $("updated").textContent = `last step logged ${fmtDur(age)} ago · refreshes every 10 s`;
+    tiles(d, state.exams.base_eval); draw(d, state.exams.base_eval); samples(d);
+  } catch (e) { $("updated").innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+}
+
+$("run").onchange = (e) => { state.run = e.target.value; state.tab = 0; try { localStorage.setItem("grpo-run", state.run); } catch (err) {} refresh(); };
+buildCards();
+if (!window.Chart) document.querySelectorAll(".chart").forEach((c) => c.innerHTML = '<p class="note">Chart library did not load (no internet?). Tiles and tables still update.</p>');
+refresh(); setInterval(refresh, 10000);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { for (const k in state.charts) state.charts[k].destroy(); state.charts = {}; refresh(); });
+</script>
+</body>
+</html>

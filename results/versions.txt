@@ -1,0 +1,6 @@
+smol-train:v2 sha256:f89cf0423d2ca3324534b9b34dcb369bf8219b9b76eff03ff075cf08f3670a81
+vllm/vllm-openai:v0.27.1-aarch64 sha256:2c211a1273b48e8929f893b267aeb1509e6b84654cdbde1bad56d79e3964224d
+smolenv-sandbox:local sha256:2857261f7593c724d60523c070bad411177aa5ff111bed70e42e9e8885a65a5c
+trl 1.14.0 peft 0.21.0 transformers 5.15.0 torch 2.13.0+cu130 vllm 0.27.1 flash-linear-attention 0.5.2
+FineEnvs commit 08a5622ff3164bb72cd57d6360c7edcce6247bf8, SmolDataEnvs revision b2bf35647e2381b1ab12c2ad7862cbbe4e8f857b
+base model Qwen/Qwen3.5-4B snapshot 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
